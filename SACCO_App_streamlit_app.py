@@ -76,10 +76,13 @@ elif page == "Member Management":
     registration_date = st.date_input("Select Registration Date:", datetime.now().date())
 
     if st.button("Register Member"):
-        c.execute("INSERT INTO members (member_id, member_name, member_contact, registration_date) VALUES (?, ?, ?, ?)",
-                  (member_id, member_name, member_contact, str(registration_date)))
-        conn.commit()
-        st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
+        if not member_id:
+            st.error("Member ID is mandatory.")
+        else:
+            c.execute("INSERT INTO members (member_id, member_name, member_contact, registration_date) VALUES (?, ?, ?, ?)",
+                      (member_id, member_name, member_contact, str(registration_date)))
+            conn.commit()
+            st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
 
     # Member List
     st.subheader("Registered Members")
@@ -93,9 +96,12 @@ elif page == "Member Management":
     member_to_delete = st.selectbox("Select a member to delete", df_members["Member ID"])
 
     if st.button("Delete Member"):
-        c.execute("DELETE FROM members WHERE member_id = ?", (member_to_delete,))
-        conn.commit()
-        st.success(f"Member with ID {member_to_delete} has been successfully deleted.")
+        if not member_to_delete:
+            st.error("Member ID is mandatory.")
+        else:
+            c.execute("DELETE FROM members WHERE member_id = ?", (member_to_delete,))
+            conn.commit()
+            st.success(f"Member with ID {member_to_delete} has been successfully deleted.")
 
 # Savings & Deposits Page
 elif page == "Savings & Deposits":
