@@ -220,9 +220,12 @@ elif page == "Financial Summary":
         st.subheader("Delete Savings Transaction")
         savings_transaction_id = st.text_input("Enter Savings Transaction ID to delete:")
         if st.button("DELETE Savings Transaction"):
-            c.execute("DELETE FROM savings_deposits WHERE transaction_id = ?", (savings_transaction_id,))
-            conn.commit()
-            st.success(f"Savings transaction with ID {savings_transaction_id} has been successfully deleted.")
+            if not savings_transaction_id:
+                st.error("Transaction ID is mandatory.")
+            else:
+                c.execute("DELETE FROM savings_deposits WHERE transaction_id = ?", (savings_transaction_id,))
+                conn.commit()
+                st.success(f"Savings transaction with ID {savings_transaction_id} has been successfully deleted.")
 
     # Display Loan Summary
     st.subheader("Loan Transactions Summary")
@@ -242,9 +245,12 @@ elif page == "Financial Summary":
         st.subheader("Delete Loan Transaction")
         loan_transaction_id = st.text_input("Enter Loan Transaction ID to delete:")
         if st.button("DELETE Loan Transaction"):
-            c.execute("DELETE FROM loans WHERE loan_transaction_id = ?", (loan_transaction_id,))
-            conn.commit()
-            st.success(f"Loan transaction with ID {loan_transaction_id} has been successfully deleted.")
+            if not loan_transaction_id:
+                st.error("Transaction ID is mandatory.")
+            else:
+                c.execute("DELETE FROM loans WHERE loan_transaction_id = ?", (loan_transaction_id,))
+                conn.commit()
+                st.success(f"Loan transaction with ID {loan_transaction_id} has been successfully deleted.")
 
 # Closing the SQLite connection on app termination
 conn.close()
