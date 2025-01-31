@@ -196,8 +196,8 @@ elif page == "Financial Summary":
     if df_savings.empty:
         st.write("No savings or deposit transactions found.")
     else:
-        # Remove Interest Rate column
-        df_savings = df_savings.drop(columns=["Interest Rate"])
+        # Reorder columns to move Member Name to the third column
+        df_savings = df_savings[["ID", "Amount", "Member Name", "Date", "Transaction ID", "Member ID"]]
         st.dataframe(df_savings)
 
         # Calculate and display TOTAL SAVINGS
@@ -215,6 +215,9 @@ elif page == "Financial Summary":
     if df_loans.empty:
         st.write("No loan transactions found.")
     else:
+        # Reorder columns to move Member Name to the third column and add Interest Rate next to Loan Period
+        df_loans = df_loans[["ID", "Loan Amount", "Member Name", "Loan Period", "Interest Rate", "Total Repayment", 
+                             "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"]]
         st.dataframe(df_loans)
 
         # Calculate and display TOTAL LOAN
