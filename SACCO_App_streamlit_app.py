@@ -118,10 +118,13 @@ elif page == "Savings & Deposits":
     transaction_id = st.text_input("Enter transaction ID:")
 
     if st.button("Update Savings"):
-        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id, member_id) VALUES (?, ?, ?, ?)",
-                  (savings_amount, str(savings_date), transaction_id, member_id_selected))
-        conn.commit()
-        st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings on {savings_date}. Transaction ID: {transaction_id}.")
+        if not transaction_id:
+            st.error("Transaction ID is mandatory.")
+        else:
+            c.execute("INSERT INTO savings_deposits (amount, date, transaction_id, member_id) VALUES (?, ?, ?, ?)",
+                      (savings_amount, str(savings_date), transaction_id, member_id_selected))
+            conn.commit()
+            st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings on {savings_date}. Transaction ID: {transaction_id}.")
 
 # Loan Management Page
 elif page == "Loan Management":
@@ -146,12 +149,15 @@ elif page == "Loan Management":
     loan_transaction_id = st.text_input("Enter loan transaction ID:")
 
     if st.button("Submit Loan Application"):
-        total_repayment = loan_amount * (1 + loan_interest_rate / 100)
-        monthly_installment = total_repayment / loan_period
-        c.execute("INSERT INTO loans (loan_amount, loan_period, total_repayment, monthly_installment, loan_date, loan_transaction_id, member_id, interest_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                  (loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id, member_id_selected, loan_interest_rate))
-        conn.commit()
-        st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
+        if not loan_transaction_id:
+            st.error("Loan Transaction ID is mandatory.")
+        else:
+            total_repayment = loan_amount * (1 + loan_interest_rate / 100)
+            monthly_installment = total_repayment / loan_period
+            c.execute("INSERT INTO loans (loan_amount, loan_period, total_repayment, monthly_installment, loan_date, loan_transaction_id, member_id, interest_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                      (loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id, member_id_selected, loan_interest_rate))
+            conn.commit()
+            st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
 # Financial Summary Page
 elif page == "Financial Summary":
@@ -210,6 +216,14 @@ elif page == "Financial Summary":
             total_interest = total_savings * (interest_rate / 100)
             st.markdown(f"**TOTAL Interest to Date: UGX {total_interest:.2f}**")
 
+        # Delete Savings Transaction
+        st.subheader("Delete Savings Transaction")
+        savings_transaction_id = st.text_input("Enter Savings Transaction ID to delete:")
+        if st.button("DELETE Savings Transaction"):
+            c.execute("DELETE FROM savings_deposits WHERE transaction_id = ?", (savings_transaction_id,))
+            conn.commit()
+            st.success(f"Savings transaction with ID {savings_transaction_id} has been successfully deleted.")
+
     # Display Loan Summary
     st.subheader("Loan Transactions Summary")
     if df_loans.empty:
@@ -223,6 +237,14 @@ elif page == "Financial Summary":
         # Calculate and display TOTAL LOAN
         total_loan = df_loans["Loan Amount"].sum()
         st.markdown(f"**TOTAL LOAN: UGX {total_loan:.2f}**")
+
+        # Delete Loan Transaction
+        st.subheader("Delete Loan Transaction")
+        loan_transaction_id = st.text_input("Enter Loan Transaction ID to delete:")
+        if st.button("DELETE Loan Transaction"):
+            c.execute("DELETE FROM loans WHERE loan_transaction_id = ?", (loan_transaction_id,))
+            conn.commit()
+            st.success(f"Loan transaction with ID {loan_transaction_id} has been successfully deleted.")
 
 # Closing the SQLite connection on app termination
 conn.close()
