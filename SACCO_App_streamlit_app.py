@@ -40,15 +40,6 @@ c.execute('''
         interest_rate REAL
     )
 ''')
-c.execute(''' 
-    CREATE TABLE IF NOT EXISTS fees_interests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        principal INTEGER,
-        rate REAL,
-        time INTEGER,
-        interest REAL
-    )
-''')
 
 conn.commit()
 
@@ -59,7 +50,7 @@ st.title("SACCO App")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Financial Summary"]
+    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Financial Summary"]
 )
 
 # About Page
@@ -125,11 +116,10 @@ elif page == "Savings & Deposits":
     savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
     savings_date = st.date_input("Select date of transaction:", datetime.now().date())
     transaction_id = st.text_input("Enter transaction ID:")
-    savings_interest_rate = st.number_input("Enter interest rate for savings (%):", min_value=0.0, value=0.0)
 
     if st.button("Update Savings"):
-        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id, member_id, interest_rate) VALUES (?, ?, ?, ?, ?)",
-                  (savings_amount, str(savings_date), transaction_id, member_id_selected, savings_interest_rate))
+        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id, member_id) VALUES (?, ?, ?, ?)",
+                  (savings_amount, str(savings_date), transaction_id, member_id_selected))
         conn.commit()
         st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings on {savings_date}. Transaction ID: {transaction_id}.")
 
@@ -150,7 +140,7 @@ elif page == "Loan Management":
     # Loan Application
     st.subheader("Apply for a Loan")
     loan_amount = st.number_input("Enter loan amount:", min_value=0, value=0)
-    loan_period = st.selectbox("Choose loan repayment period (months):", [6, 12, 24, 36])
+    loan_period = st.selectbox("Choose loan repayment period (months):", list(range(1, 37)))
     loan_interest_rate = st.number_input("Enter interest rate for loan (%):", min_value=0.0, value=0.0)
     loan_date = st.date_input("Select loan application date:", datetime.now().date())
     loan_transaction_id = st.text_input("Enter loan transaction ID:")
@@ -177,36 +167,48 @@ elif page == "Financial Summary":
 
     if selected_member == "All Members":
         # Fetch All Savings & Deposits Transactions
-        c.execute("SELECT * FROM savings_deposits")
+        c.execute("SELECT savings_deposits.*, members.member_name FROM savings_deposits JOIN members ON savings_deposits.member_id = members.member_id")
         savings_data = c.fetchall()
-        df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID", "Interest Rate"])
+        df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID", "Interest Rate", "Member Name"])
 
         # Fetch All Loan Transactions
-        c.execute("SELECT * FROM loans")
+        c.execute("SELECT loans.*, members.member_name FROM loans JOIN members ON loans.member_id = members.member_id")
         loan_data = c.fetchall()
-        df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID", "Interest Rate"])
+        df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID", "Interest Rate", "Member Name"])
 
     else:
         # Extract Member ID from Selection
         selected_member_id = members[member_choices.index(selected_member) - 1][0]
 
         # Fetch Savings & Deposits for Selected Member
-        c.execute("SELECT * FROM savings_deposits WHERE member_id = ?", (selected_member_id,))
+        c.execute("SELECT savings_deposits.*, members.member_name FROM savings_deposits JOIN members ON savings_deposits.member_id = members.member_id WHERE savings_deposits.member_id = ?", (selected_member_id,))
         savings_data = c.fetchall()
-        df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID", "Interest Rate"])
+        df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID", "Interest Rate", "Member Name"])
 
          # Fetch Loans for Selected Member
-        c.execute("SELECT * FROM loans WHERE member_id = ?", (selected_member_id,))
+        c.execute("SELECT loans.*, members.member_name FROM loans JOIN members ON loans.member_id = members.member_id WHERE loans.member_id = ?", (selected_member_id,))
         loan_data = c.fetchall()
         df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", 
-                                                    "Monthly Installment", "Loan Date", "Transaction ID", "Member ID", "Interest Rate"])
+                                                    "Monthly Installment", "Loan Date", "Transaction ID", "Member ID", "Interest Rate", "Member Name"])
 
     # Display Savings Summary
     st.subheader("Savings & Deposits Summary")
     if df_savings.empty:
         st.write("No savings or deposit transactions found.")
     else:
+        # Remove Interest Rate column
+        df_savings = df_savings.drop(columns=["Interest Rate"])
         st.dataframe(df_savings)
+
+        # Calculate and display TOTAL SAVINGS
+        total_savings = df_savings["Amount"].sum()
+        st.markdown(f"**TOTAL SAVINGS: UGX {total_savings:.2f}**")
+
+        # Manual option to calculate interest
+        interest_rate = st.number_input("Enter interest rate for savings (%):", min_value=0.0, value=0.0)
+        if interest_rate > 0:
+            total_interest = total_savings * (interest_rate / 100)
+            st.markdown(f"**TOTAL Interest to Date: UGX {total_interest:.2f}**")
 
     # Display Loan Summary
     st.subheader("Loan Transactions Summary")
@@ -215,22 +217,9 @@ elif page == "Financial Summary":
     else:
         st.dataframe(df_loans)
 
-# Notifications Page
-elif page == "Notifications":
-    st.header("Notifications")
-    st.write("This feature is under development. Notifications will be available in future updates.")
-
-# Fees & Interest Page
-elif page == "Fees & Interest":
-    st.header("Fees & Interest")
-
-    # Inputs for Fees & Interest Calculation
-    st.subheader("Set Interest Rates")
-    savings_interest_rate = st.number_input("Enter Interest Rate for Savings (%):", min_value=0.0, value=0.0)
-    loan_interest_rate = st.number_input("Enter Interest Rate for Loans (%):", min_value=0.0, value=0.0)
-
-    if st.button("Set Interest Rates"):
-        st.success(f"Interest rates set successfully: Savings at {savings_interest_rate}% and Loans at {loan_interest_rate}%.")
+        # Calculate and display TOTAL LOAN
+        total_loan = df_loans["Loan Amount"].sum()
+        st.markdown(f"**TOTAL LOAN: UGX {total_loan:.2f}**")
 
 # Closing the SQLite connection on app termination
 conn.close()
