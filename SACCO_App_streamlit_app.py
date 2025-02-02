@@ -13,6 +13,7 @@ c.execute('''
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         member_id TEXT,
         member_name TEXT,
+        member_email TEXT,
         member_contact TEXT,
         registration_date TEXT
     )
@@ -72,15 +73,18 @@ elif page == "Member Management":
     st.subheader("Add New Member")
     member_id = st.text_input("Enter Member ID:")
     member_name = st.text_input("Enter Member Name:")
+    member_email = st.text_input("Enter Email Address:")
     member_contact = st.text_input("Enter Contact Information:")
     registration_date = st.date_input("Select Registration Date:", datetime.now().date())
 
     if st.button("Register Member"):
         if not member_id:
             st.error("Member ID is mandatory.")
+        elif not member_email:
+            st.error("Email Address is mandatory.")
         else:
-            c.execute("INSERT INTO members (member_id, member_name, member_contact, registration_date) VALUES (?, ?, ?, ?)",
-                      (member_id, member_name, member_contact, str(registration_date)))
+            c.execute("INSERT INTO members (member_id, member_name, member_email, member_contact, registration_date) VALUES (?, ?, ?, ?, ?)",
+                      (member_id, member_name, member_email, member_contact, str(registration_date)))
             conn.commit()
             st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
 
@@ -88,7 +92,7 @@ elif page == "Member Management":
     st.subheader("Registered Members")
     c.execute("SELECT * FROM members")
     members = c.fetchall()
-    df_members = pd.DataFrame(members, columns=["ID", "Member ID", "Name", "Contact", "Registration Date"])
+    df_members = pd.DataFrame(members, columns=["ID", "Member ID", "Name", "Email", "Contact", "Registration Date"])
     st.dataframe(df_members)
 
     # Delete Member
