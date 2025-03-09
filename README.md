@@ -1,1 +1,1 @@
-# SACCO_App
+SACCO Loan Management App – your all-in-one solution for managing SACCO members, savings, deposits, and loans with ease. This Streamlit application provides a user-friendly interface to register members, track financial transactions, calculate interest, and generate financial summaries. Whether you're overseeing a SACCO or looking for a transparent and efficient way to manage member finances, this app has everything you need to stay organized and informed.
